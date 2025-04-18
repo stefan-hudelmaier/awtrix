@@ -86,8 +86,8 @@ def quotes():
 
 def math_questions():
     while True:
-        a = random.randint(1, 10)
-        b = random.randint(1, 10)
+        a = random.randint(2, 10)
+        b = random.randint(2, 10)
         op = random.choice(['+', '-', '*'])
         text = f"{a} {op} {b}"
         requests.post(f"http://{awtrix_ip}/api/custom?name=math", json={"text": text, "duration": 5, "icon": 5259})
