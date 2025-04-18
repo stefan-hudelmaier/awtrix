@@ -47,7 +47,8 @@ def connect_mqtt():
         logger.warning(f"Disconnected from MQTT Broker, return code {reason_code}")
 
     def on_message(client, userdata, msg):
-        print(f"Received '{msg.payload.decode()}' from '{msg.topic}' topic")
+        text = msg.payload.decode()
+        logger.debug(f"Received '{text}' from '{msg.topic}' topic")
         app_name = None
         icon = None
         if msg.topic == "stefan/house/battery/level":
@@ -58,7 +59,8 @@ def connect_mqtt():
             icon = 1338
 
         if app_name is not None and icon is not None:
-            requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": msg.payload.decode(), "duration": 5, "icon": icon})
+            requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": text, "duration": 5, "icon": icon})
+            logger.info(f"Posted message to AWTRIX: {text}")
 
     mqtt_client = mqtt.Client(client_id=client_id, callback_api_version=mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     mqtt_client.tls_set(ca_certs='/etc/ssl/certs/ca-certificates.crt')
@@ -90,6 +92,7 @@ def math_questions():
         b = random.randint(2, 10)
         op = random.choice(['+', '-', '*'])
         text = f"{a} {op} {b}"
+        logger.info(f"Math question: {text}")
         requests.post(f"http://{awtrix_ip}/api/custom?name=math", json={"text": text, "duration": 5, "icon": 5259})
         sleep(30)
 
