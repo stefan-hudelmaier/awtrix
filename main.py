@@ -84,7 +84,7 @@ def connect_mqtt():
         elif msg.topic == "stefan/house/kpis/daily_pv_generation":
             app_name = "dailypvgeneration"
             icon = SOLAR_INPUT_ICON
-            text = str(int(float(text)))
+            text = str(int(float(text))) + " kWh"
 
         if app_name is not None and icon is not None:
             requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": text, "duration": 5, "icon": icon})
