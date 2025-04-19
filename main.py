@@ -25,6 +25,7 @@ BATTERY_DISCHARGING_ICON = 53736
 SUN_ICON = 1338
 MATH_ICON = 5259
 SOLAR_INPUT_ICON = 37515
+TEMPERATURE_ICON = 2369
 
 log_level = os.environ.get('LOG_LEVEL', 'INFO')
 print("Using log level", log_level)
@@ -55,6 +56,7 @@ def connect_mqtt():
             client.subscribe("stefan/house/inverters/total_dc_power")
             client.subscribe("finance/stock-exchange/index/GDAXI")
             client.subscribe("stefan/house/kpis/daily_pv_generation")
+            client.subscribe("stefan/house/kpis/outside_temperature")
         else:
             logger.error(f"Failed to connect, return code {rc}")
 
@@ -85,6 +87,10 @@ def connect_mqtt():
             app_name = "dailypvgeneration"
             icon = SOLAR_INPUT_ICON
             text = str(int(float(text))) + " kWh"
+        elif msg.topic == "stefan/house/kpis/outside_temperature":
+            app_name = "outsidetemp"
+            icon = TEMPERATURE_ICON
+            text = str(int(float(text))) + "°C"
 
         if app_name is not None and icon is not None:
             requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": text, "duration": 5, "icon": icon})
