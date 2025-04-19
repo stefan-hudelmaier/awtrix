@@ -19,6 +19,12 @@ password = os.environ['MQTT_PASSWORD']
 awtrix_ip = os.environ['AWTRIX_IP']
 port = 8883
 
+STOCK_ICON = 52810
+BATTERY_CHARGING_ICON = 1095
+BATTERY_DISCHARGING_ICON = 53736
+SUN_ICON = 1338
+MATH_ICON = 5259
+
 log_level = os.environ.get('LOG_LEVEL', 'INFO')
 print("Using log level", log_level)
 
@@ -31,7 +37,13 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-last_successful_message = None
+
+battery_charging = True
+
+
+def disable_standard_apps():
+    for app in ["Battery", "Temperature"]:
+        requests.post(f"http://{awtrix_ip}/api/custom?name={app}", json={})
 
 
 def connect_mqtt():
@@ -40,6 +52,7 @@ def connect_mqtt():
             logger.info("Connected to MQTT Broker")
             client.subscribe("stefan/house/battery/level")
             client.subscribe("stefan/house/inverters/total_dc_power")
+            client.subscribe("finance/stock-exchange/index/GDAXI")
         else:
             logger.error(f"Failed to connect, return code {rc}")
 
@@ -47,16 +60,25 @@ def connect_mqtt():
         logger.warning(f"Disconnected from MQTT Broker, return code {reason_code}")
 
     def on_message(client, userdata, msg):
+
+        global battery_charging
+
         text = msg.payload.decode()
         logger.debug(f"Received '{text}' from '{msg.topic}' topic")
         app_name = None
         icon = None
         if msg.topic == "stefan/house/battery/level":
             app_name = "solarbat"
-            icon = 12124
+            icon = BATTERY_CHARGING_ICON if battery_charging else BATTERY_DISCHARGING_ICON
         elif msg.topic == "stefan/house/inverters/total_dc_power":
             app_name = "solarpower"
-            icon = 1338
+            power = int(float(text))
+            text = str(power)
+            icon = SUN_ICON
+            battery_charging = power > 0
+        elif msg.topic == "finance/stock-exchange/index/GDAXI":
+            app_name = "dax"
+            icon = STOCK_ICON
 
         if app_name is not None and icon is not None:
             requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": text, "duration": 5, "icon": icon})
@@ -88,13 +110,61 @@ def quotes():
 
 def math_questions():
     while True:
+
+        # Do this as a side effect
+        disable_standard_apps()
+
+        op = random.choice(['+', '-', '*'])
+
+        # For *
         a = random.randint(2, 10)
         b = random.randint(2, 10)
-        op = random.choice(['+', '-', '*'])
+
+        if op == '+':
+            a = random.randint(2, 50)
+            b = random.randint(2, 10)
+
+        if op == '-':
+            a = random.randint(15, 50)
+            b = random.randint(2, 14)
+
         text = f"{a} {op} {b}"
         logger.info(f"Math question: {text}")
-        requests.post(f"http://{awtrix_ip}/api/custom?name=math", json={"text": text, "duration": 5, "icon": 5259})
+        requests.post(f"http://{awtrix_ip}/api/custom?name=math", json={"text": text, "duration": 5, "icon": MATH_ICON})
         sleep(30)
+
+
+def english():
+
+    translations = []
+    with open("english.txt", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line.strip()
+            if line.startswith("#"):
+                continue
+            parts = line.split(" = ")
+            if len(parts) != 2:
+                logger.warning(f"Invalid line in english.txt: {line}")
+                continue
+            english = parts[0]
+            german = parts[1]
+            translations.append((english, german))
+
+    while True:
+        english, german = random.choice(translations)
+        text = f"{english} = {german}"
+        body = {
+            "text": [
+                {"t": english, "c": "#00FF00"},
+                {"t": " "},
+                {"t": german, "c": "#FF0000"}
+            ],
+            "duration": 15}
+        logger.info(f"English: {text}")
+        requests.post(f"http://{awtrix_ip}/api/custom?name=english", json=body)
+        sleep(30)
+
 
 def main():
     mqtt_client = connect_mqtt()
@@ -104,6 +174,9 @@ def main():
 
     math_questions_thread = Thread(target=math_questions, args=())
     math_questions_thread.start()
+
+    english_questions_thread = Thread(target=english, args=())
+    english_questions_thread.start()
 
     mqtt_client.loop_forever(retry_first_connection=True)
 
