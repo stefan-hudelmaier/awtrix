@@ -119,12 +119,17 @@ def connect_mqtt():
 def quotes():
     while True:
         try:
+
+            # Do this as a side effect
+            disable_standard_apps()
+
             # quote = wikiquote.quotes('Hermann Hesse', lang='de')[0]
             quote = wikiquote.quote_of_the_day(lang='en')
             quote_text = f"{quote[0]} - {quote[1]}"
             duration = len(quote) // 3 + 10
             logger.info(f"Quote: {quote_text}")
-            requests.post(f"http://{awtrix_ip}/api/custom?name=quote", json={"text": quote_text, "duration": duration})
+            r = requests.post(f"http://{awtrix_ip}/api/custom?name=quote", json={"text": quote_text, "duration": duration})
+            logger.info(f"Response from AWTRIX: {r.status_code} - {r.text}")
             # TODO: Do this less often
             sleep(5 * 60)
         except:
@@ -137,9 +142,6 @@ def quotes():
 def math_questions():
     while True:
         try:
-
-            # Do this as a side effect
-            disable_standard_apps()
 
             op = random.choice(['+', '-', '*'])
 
