@@ -83,6 +83,8 @@ def connect_mqtt():
                 battery_charging = power > 0
             elif msg.topic == "finance/stock-exchange/index/GDAXI":
                 app_name = "dax"
+                # Remove decimals
+                text = str(int(float(text)))
                 icon = STOCK_ICON
             elif msg.topic == "stefan/house/kpis/daily_pv_generation":
                 app_name = "dailypvgeneration"
@@ -118,9 +120,9 @@ def quotes():
     while True:
         try:
             # quote = wikiquote.quotes('Hermann Hesse', lang='de')[0]
-            quote = wikiquote.quote_of_the_day(lang='de')
+            quote = wikiquote.quote_of_the_day(lang='en')
             quote_text = f"{quote[0]} - {quote[1]}"
-            duration = len(quote) // 5 + 10
+            duration = len(quote) // 3 + 10
             logger.info(f"Quote: {quote_text}")
             requests.post(f"http://{awtrix_ip}/api/custom?name=quote", json={"text": quote_text, "duration": duration})
             # TODO: Do this less often
@@ -208,11 +210,11 @@ def main():
     quotes_thread = Thread(target=quotes, args=())
     quotes_thread.start()
 
-    math_questions_thread = Thread(target=math_questions, args=())
-    math_questions_thread.start()
+    #math_questions_thread = Thread(target=math_questions, args=())
+    #math_questions_thread.start()
 
-    english_questions_thread = Thread(target=english, args=())
-    english_questions_thread.start()
+    #english_questions_thread = Thread(target=english, args=())
+    #english_questions_thread.start()
 
     mqtt_client.loop_forever(retry_first_connection=True)
 
