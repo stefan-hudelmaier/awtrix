@@ -227,8 +227,10 @@ def english():
 def main():
     mqtt_client = connect_mqtt()
 
-    quotes_thread = Thread(target=quotes, args=())
-    quotes_thread.start()
+    disable_standard_apps()
+
+    # quotes_thread = Thread(target=quotes, args=())
+    # quotes_thread.start()
 
     # math_questions_thread = Thread(target=math_questions, args=())
     # math_questions_thread.start()
