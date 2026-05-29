@@ -100,7 +100,7 @@ def connect_mqtt():
                     requests.post(f"http://{awtrix_ip}/api/custom?name={app_name}", json={"text": text, "duration": 5, "icon": icon})
                     logger.info(f"Posted message to AWTRIX: {text}")
                 except:
-                    logger.error("Error sending MQTT update to awtrix")
+                    logger.error(f"Error sending MQTT update to awtrix. {}")
         except:
             logger.error("Error while processing MQTT message", exc_info=True)
 
@@ -126,16 +126,16 @@ def quotes():
             # quote = wikiquote.quotes('Hermann Hesse', lang='de')[0]
             quote = wikiquote.quote_of_the_day(lang='en')
             quote_text = f"{quote[0]} - {quote[1]}"
-            duration = len(quote) // 3 + 10
+            duration = len(quote) // 2 + 15
             logger.info(f"Quote: {quote_text}")
             r = requests.post(f"http://{awtrix_ip}/api/custom?name=quote", json={"text": quote_text, "duration": duration})
             logger.info(f"Response from AWTRIX: {r.status_code} - {r.text}")
             # TODO: Do this less often
             sleep(5 * 60)
-        except:
+        except Exception as e:
             # Do not log stacktrace
             # logger.exception("Error while sending quote")
-            logger.error("Error while sending quote")
+            logger.error(f"Error while fetching or sending quote: {e}")
             sleep(30)
 
 
